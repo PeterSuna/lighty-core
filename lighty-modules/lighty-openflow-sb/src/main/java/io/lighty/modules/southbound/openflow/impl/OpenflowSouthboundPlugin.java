@@ -66,7 +66,7 @@ public class OpenflowSouthboundPlugin extends AbstractLightyModule implements Op
         super(executorService);
 
         this.lightyServices = lightyServices;
-        this.providers = new SwitchConfig().getDefaultProviders();
+        this.providers = new SwitchConfig().getDefaultProviders(this.lightyServices.getSystemReadyMonitor());
         this.configurationService = new ConfigurationServiceFactory().newInstance(new OpenflowpluginConfiguration()
                 .getDefaultProviderConfig());
     }

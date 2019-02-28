@@ -8,6 +8,7 @@
 package io.lighty.modules.southbound.openflow.impl.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opendaylight.infrautils.ready.SystemReadyMonitor;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.openflow.provider.config.rev160510.NonZeroUint16Type;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.openflow.provider.config.rev160510.NonZeroUint32Type;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.openflow.provider.config.rev160510.OpenflowProviderConfig;

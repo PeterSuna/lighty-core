@@ -38,42 +38,34 @@
         <dependency>
             <groupId>org.opendaylight.openflowplugin.model</groupId>
             <artifactId>model-flow-base</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.openflowplugin.model</groupId>
             <artifactId>model-flow-service</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.openflowplugin.model</groupId>
             <artifactId>model-flow-statistics</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.openflowplugin.applications</groupId>
             <artifactId>forwardingrules-manager</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.openflowplugin.applications</groupId>
             <artifactId>arbitratorreconciliation-impl</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.openflowplugin.applications</groupId>
             <artifactId>of-switch-config-pusher</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.openflowplugin.applications</groupId>
             <artifactId>topology-manager</artifactId>
-            <version>0.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.opendaylight.serviceutils</groupId>
             <artifactId>srm-impl</artifactId>
-            <version>0.2.1</version>
         </dependency>
     </dependencies>
 </project>

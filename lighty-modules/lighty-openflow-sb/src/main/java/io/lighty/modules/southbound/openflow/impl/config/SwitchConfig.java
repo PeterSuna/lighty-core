@@ -8,6 +8,9 @@
 package io.lighty.modules.southbound.openflow.impl.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.lighty.core.controller.impl.services.LightyDiagStatusServiceImpl;
+import org.opendaylight.infrautils.diagstatus.DiagStatusService;
+import org.opendaylight.infrautils.ready.SystemReadyMonitor;
 import org.opendaylight.openflowjava.protocol.impl.core.SwitchConnectionProviderFactoryImpl;
 import org.opendaylight.openflowjava.protocol.spi.connection.SwitchConnectionProvider;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.openflow.config.rev140630.KeystoreType;
@@ -94,14 +97,15 @@ public class SwitchConfig {
                         ).build();
     }
 
-    public List<SwitchConnectionProvider> getDefaultProviders() {
+    public List<SwitchConnectionProvider> getDefaultProviders(SystemReadyMonitor systemReadyMonitor) {
         final List<SwitchConnectionProvider> switchConnectionProviderList = new ArrayList<>();
-        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl().newInstance(this.defaultSwitch));
-        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl().newInstance(this.legacySwitch));
+        DiagStatusService diagStatusService = new LightyDiagStatusServiceImpl(systemReadyMonitor);
+        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl(diagStatusService).newInstance(this.defaultSwitch));
+        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl(diagStatusService).newInstance(this.legacySwitch));
         return switchConnectionProviderList;
     }
 
-    public List<SwitchConnectionProvider> getProviders() {
+    public List<SwitchConnectionProvider> getProviders(SystemReadyMonitor systemReadyMonitor) {
 
         final SwitchConnectionConfig tmpDefaultSwitch =
                 new SwitchConnectionConfigBuilder()
@@ -147,9 +151,10 @@ public class SwitchConfig {
                         .build()
                         ).setGroupAddModEnabled(true).build();
 
+        DiagStatusService diagStatusService = new LightyDiagStatusServiceImpl(systemReadyMonitor);
         final List<SwitchConnectionProvider> switchConnectionProviderList = new ArrayList<>();
-        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl().newInstance(tmpDefaultSwitch));
-        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl().newInstance(tmpLegacySwitch));
+        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl(diagStatusService).newInstance(tmpDefaultSwitch));
+        switchConnectionProviderList.add(new SwitchConnectionProviderFactoryImpl(diagStatusService).newInstance(tmpLegacySwitch));
         return switchConnectionProviderList;
     }
 
