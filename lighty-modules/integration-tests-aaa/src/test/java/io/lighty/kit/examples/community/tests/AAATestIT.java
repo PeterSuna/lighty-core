@@ -384,6 +384,7 @@ public class AAATestIT {
         } catch (InterruptedException e) {
             LOG.error("Interrupted while shutting down", e);
         }
+        Main.shutdown();
     }
 
     private static class Connection {
