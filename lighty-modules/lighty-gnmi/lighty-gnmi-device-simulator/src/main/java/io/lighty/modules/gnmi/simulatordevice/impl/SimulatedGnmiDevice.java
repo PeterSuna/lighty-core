@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Objects;
-import org.opendaylight.yangtools.yang.parser.stmt.reactor.EffectiveSchemaContext;
+import org.opendaylight.yangtools.yang.model.api.EffectiveModelContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class SimulatedGnmiDevice {
 
     private GnmiService gnmiService;
 
-    private EffectiveSchemaContext schemaContext;
+    private EffectiveModelContext schemaContext;
     private YangDataService dataService;
 
 
@@ -193,7 +193,7 @@ public class SimulatedGnmiDevice {
         return dataService;
     }
 
-    public EffectiveSchemaContext getSchemaContext() {
+    public EffectiveModelContext getSchemaContext() {
         return schemaContext;
     }
 
