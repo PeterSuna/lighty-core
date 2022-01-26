@@ -1,4 +1,4 @@
-FROM openjdk:11-jre-slim
+FROM openjdk:11-jre-slim-bullseye
 
 WORKDIR /lighty-rcgnmi
 COPY LICENSE ${lighty.app.name} entrypoint.sh ./
