@@ -77,7 +77,7 @@ data:
             "netconfNorthboundSshServerBindingAddress":"0.0.0.0",
             "netconfNorthboundSshServerPortNumber":"2830",
             "userCredentials":{
-                "admin":"admin"
+                {{ .Values.lighty.netconfNorthbound.username | quote }}:{{ .Values.lighty.netconfNorthbound.password | quote }}
             }
         },
         "netconf":{
@@ -86,8 +86,8 @@ data:
         "aaa": {
             "enableAAA": {{ .Values.lighty.aaa.enableAAA }},
             "moonEndpointPath" : "/moon",
-            "dbPassword" : "bar",
-            "dbUsername" : "foo"
+            "dbPassword" : {{ .Values.lighty.aaa.password | quote }},
+            "dbUsername" : {{ .Values.lighty.aaa.username | quote }}
         }
     }
 

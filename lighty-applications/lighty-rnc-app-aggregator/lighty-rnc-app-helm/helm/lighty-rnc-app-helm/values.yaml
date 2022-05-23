@@ -24,14 +24,21 @@ lighty:
     restconfPath: "/restconf"
     useHttps: false
     needClientAuth: false
-    keyStorePassword: "8pgETwat"
+    # Keystore password is loaded from secrets.yaml file
+    # keyStorePassword: "8pgETwat"
     keyStoreType: "JKS"
     keyStoreDirectory: "keystore"
     keyStoreFileName: "lightyio.jks"
-    trustKeyStorePassword: "8pgETwat"
+    # Keystore password is loaded from secrets.yaml file
+    # trustKeyStorePassword: "8pgETwat"
     trustKeyStoreDirectory: "keystore"
     trustKeyStoreFileName: "lightyio.jks"
     enableSwagger: false
+
+# netconf-northbound credential are loaded from secrets.yaml file
+# netconfNorthbound:
+  # username:
+  # password:
 
   jmx:
     # Port on which JMX server in image is listening, should be same as defined in dockerfile
@@ -62,6 +69,9 @@ lighty:
   aaa:
     # If true, AAA lighty.io component will be enabled
     enableAAA: false
+    # AAA credential are loaded from secrets.yaml file
+    # username:
+    # password:
 
 nodePort:
   # If switched to "true", NodePort service will be created; If switched to "false", ClusterIp service will be created
