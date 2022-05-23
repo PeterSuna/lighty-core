@@ -29,7 +29,31 @@ runs:
         docker load --input ./${{ inputs.app-name }}.tar
         rm ./${{ inputs.app-name }}.tar
       shell: bash
+    - name: Install helm-secret plugin
+      if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+      run: helm plugin install https://github.com/jkroepke/helm-secrets
+      shell: bash
+    - name: Install SOPS
+      if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+      run: |
+        wget -P ~/ "https://github.com/mozilla/sops/releases/download/v3.7.3/sops_3.7.3_amd64.deb"
+        sudo dpkg --install ~/sops_3.7.3_amd64.deb
+      shell: bash
+    - name: Move age keys to default soap folder
+      if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+      run: |
+        mkdir -p ~/.config/sops/age/
+        cp "${GITHUB_WORKSPACE}/.github/workflows/age-keys.txt" ~/.config/sops/age/keys.txt
+      shell: bash
+    - name: Install app helm chart with secrets
+      if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+      run: |
+        APP_HELM_FOLDER=lighty-applications/${{ inputs.app-name }}-aggregator/${{ inputs.app-name }}-helm/helm/${{ inputs.app-name }}-helm
+        helm secrets install ${{ inputs.app-name }} $APP_HELM_FOLDER -f $APP_HELM_FOLDER/secrets.yaml
+        sleep 35 # Wait for app to start
+      shell: bash
     - name: Install app helm chart
+      if: ${{ inputs.app-name == 'lighty-rcgnmi-app' }}
       run: |
         helm install ${{ inputs.app-name }} lighty-applications/${{ inputs.app-name }}-aggregator/${{ inputs.app-name }}-helm/helm/${{ inputs.app-name }}-helm
         sleep 35 # Wait for app to start
