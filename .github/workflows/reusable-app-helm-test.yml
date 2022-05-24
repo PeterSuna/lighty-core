@@ -1,0 +1,97 @@
+name: Reusable lighty app helm test
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: Name of the application in /lighty-applications
+        required: true
+        type: string
+
+jobs:
+  app_test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v2
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Setup Minikube
+        uses: manusa/actions-setup-minikube@v2.4.2
+        with:
+          minikube version: 'v1.24.0'
+          kubernetes version: 'v1.22.4'
+      - name: Start Minikube cluster
+        run: minikube start
+      - name: Install helm v3.6.2
+        uses: azure/setup-helm@v1.1
+        with:
+          version: '3.7.1'
+      - name: Install socat
+        run: |
+          sudo apt-get -y install socat
+        shell: bash
+      - name: Helm version
+        run: helm version
+        shell: bash
+      - name: Kubernetes version
+        run: minikube kubectl -- version
+        shell: bash
+      - name: Maven install + build docker image
+        run: mvn install -B -Pdocker -DskipTests
+        shell: bash
+      - name: Start app in docker container
+        run: |
+          echo "Exporting Docker image to .tar ..."
+          image_name=$(mvn help:evaluate -f lighty-applications/${{ inputs.app-name }}-aggregator/${{ inputs.app-name }}-docker/pom.xml -Dexpression=image.name -q -DforceStdout)
+          docker save --output="./${{ inputs.app-name }}.tar" $image_name
+          echo "Loading docker image to minikube"
+          docker load --input ./${{ inputs.app-name }}.tar
+          rm ./${{ inputs.app-name }}.tar
+        shell: bash
+      - name: Install helm-secret plugin
+        if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+        run: helm plugin install https://github.com/jkroepke/helm-secrets
+        shell: bash
+      - name: Install SOPS
+        if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+        run: |
+          wget -P ~/ "https://github.com/mozilla/sops/releases/download/v3.7.3/sops_3.7.3_amd64.deb"
+          sudo dpkg --install ~/sops_3.7.3_amd64.deb
+        shell: bash
+      - name: Move age keys to default sops folder
+        if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+        run: |
+          mkdir -p ~/.config/sops/age/
+          cp "${GITHUB_WORKSPACE}/.github/workflows/age-keys.txt" ~/.config/sops/age/keys.txt
+        shell: bash
+      - name: Install app helm chart with secrets
+        if: ${{ inputs.app-name == 'lighty-rnc-app' }}
+        run: |
+          APP_HELM_FOLDER=lighty-applications/${{ inputs.app-name }}-aggregator/${{ inputs.app-name }}-helm/helm/${{ inputs.app-name }}-helm
+          helm secrets install ${{ inputs.app-name }} $APP_HELM_FOLDER -f $APP_HELM_FOLDER/secrets.yaml
+          sleep 35 # Wait for app to start
+        shell: bash
+      - name: Install app helm chart
+        if: ${{ inputs.app-name == 'lighty-rcgnmi-app' }}
+        run: |
+          helm install ${{ inputs.app-name }} lighty-applications/${{ inputs.app-name }}-aggregator/${{ inputs.app-name }}-helm/helm/${{ inputs.app-name }}-helm
+          sleep 35 # Wait for app to start
+        shell: bash
+      - name: Run apps testing scripts
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/workflows/${{ inputs.app-name }}/tests-${{ inputs.app-name }}.sh"
+          # run script
+          "${GITHUB_WORKSPACE}/.github/workflows/${{ inputs.app-name }}/tests-${{ inputs.app-name }}.sh"
+        shell: bash
