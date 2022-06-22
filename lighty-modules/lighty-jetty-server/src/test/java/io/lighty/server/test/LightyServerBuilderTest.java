@@ -7,7 +7,13 @@
  */
 package io.lighty.server.test;
 
+import io.lighty.core.controller.impl.config.ConfigurationException;
+import io.lighty.server.Http2LightyServerBuilder;
+import io.lighty.server.HttpsLightyServerBuilder;
 import io.lighty.server.LightyServerBuilder;
+import io.lighty.server.config.LightyServerConfig;
+import io.lighty.server.config.SecurityConfig;
+import io.lighty.server.util.LightyServerConfigUtils;
 import java.net.InetSocketAddress;
 import java.util.EventListener;
 import org.eclipse.jetty.server.Server;
@@ -32,4 +38,40 @@ public class LightyServerBuilderTest {
         Server server = serverBuilder.build();
         Assert.assertNotNull(server);
     }
+
+    @Test
+    public void testHttpsServerBuilder() throws ConfigurationException {
+
+        FilterHolder filterHolder = new FilterHolder();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+
+        LightyServerConfig lightyServerConfig = LightyServerConfigUtils.getDefaultLightyServerConfig();
+        SecurityConfig securityConfig = lightyServerConfig.getSecurityConfig();
+
+        LightyServerBuilder serverBuilder = new HttpsLightyServerBuilder(new InetSocketAddress(8080), securityConfig);
+        serverBuilder.addCommonEventListener(new EventListener(){});
+        serverBuilder.addCommonFilter(filterHolder, "/path");
+        serverBuilder.addCommonInitParameter("key", "value");
+        serverBuilder.addContextHandler(contexts);
+        Server server = serverBuilder.build();
+        Assert.assertNotNull(server);
+    }
+
+    @Test
+    public void testHttp2ServerBuilder() throws ConfigurationException {
+
+        FilterHolder filterHolder = new FilterHolder();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        LightyServerConfig lightyServerConfig = LightyServerConfigUtils.getDefaultLightyServerConfig();
+        SecurityConfig securityConfig = lightyServerConfig.getSecurityConfig();
+
+        LightyServerBuilder serverBuilder = new Http2LightyServerBuilder(new InetSocketAddress(8080), securityConfig);
+        serverBuilder.addCommonEventListener(new EventListener(){});
+        serverBuilder.addCommonFilter(filterHolder, "/path");
+        serverBuilder.addCommonInitParameter("key", "value");
+        serverBuilder.addContextHandler(contexts);
+        Server server = serverBuilder.build();
+        Assert.assertNotNull(server);
+    }
+
 }
