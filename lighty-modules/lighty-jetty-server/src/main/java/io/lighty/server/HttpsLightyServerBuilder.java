@@ -22,12 +22,12 @@ public class HttpsLightyServerBuilder extends LightyServerBuilder {
 
     public HttpsLightyServerBuilder(final InetSocketAddress inetSocketAddress, final SecurityConfig securityConfig) {
         super(inetSocketAddress);
-        this.server = new Server();
         this.securityConfig = securityConfig;
     }
 
     @Override
     public Server build() {
+        super.server = new Server();
         final Server server = super.build();
         final SslConnectionFactory ssl = securityConfig.getSslConnectionFactory(HttpVersion.HTTP_1_1.asString());
         final ServerConnector sslConnector = new ServerConnector(server,
