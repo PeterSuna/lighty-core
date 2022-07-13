@@ -65,6 +65,7 @@ data:
             "useHttp2": {{ .Values.lighty.server.useHttp2 }},
             "useHttps": {{ .Values.lighty.server.useHttps }},
             "needClientAuth": {{ .Values.lighty.server.needClientAuth }},
+            "enableSniHostCheck": {{ .Values.lighty.server.enableSniHostCheck }},
             "keyStorePassword": {{ .Values.lighty.server.keyStorePassword | quote }},
             "keyStoreType": {{ .Values.lighty.server.keyStoreType | quote }},
             "keyStoreFilePath": "{{ .Values.lighty.server.keyStoreDirectory }}/{{ .Values.lighty.server.keyStoreFileName }}",

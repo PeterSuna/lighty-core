@@ -20,6 +20,7 @@ public class LightyServerConfig {
     private boolean useHttps = false;
     private boolean useHttp2 = false;
     private boolean needClientAuth = false;
+    private boolean enableSniHostCheck = false;
     private boolean enableSwagger = false;
 
     public void setSecurityConfig(final SecurityConfig securityConfig) {
@@ -100,5 +101,13 @@ public class LightyServerConfig {
 
     public void setUseHttp2(boolean useHttp2) {
         this.useHttp2 = useHttp2;
+    }
+
+    public boolean isEnableSniHostCheck() {
+        return enableSniHostCheck;
+    }
+
+    public void setEnableSniHostCheck(boolean enableSniHostCheck) {
+        this.enableSniHostCheck = enableSniHostCheck;
     }
 }

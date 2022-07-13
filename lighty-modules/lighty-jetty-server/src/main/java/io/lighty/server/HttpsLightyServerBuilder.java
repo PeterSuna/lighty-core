@@ -15,7 +15,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
 
 public class HttpsLightyServerBuilder extends LightyServerBuilder {
     private final SecurityConfig securityConfig;
@@ -28,23 +27,20 @@ public class HttpsLightyServerBuilder extends LightyServerBuilder {
     @Override
     public Server build() {
         super.server = new Server();
-        final Server server = super.build();
-        final SslConnectionFactory ssl = securityConfig.getSslConnectionFactory(HttpVersion.HTTP_1_1.asString());
-        final ServerConnector sslConnector = new ServerConnector(server,
-                ssl, httpConfiguration(this.inetSocketAddress));
+        final var server = super.build();
+        // HTTPS Configuration
+        final var httpsConfig = new HttpConfiguration();
+        httpsConfig.setSecurePort(inetSocketAddress.getPort());
+        httpsConfig.setSendXPoweredBy(true);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer(securityConfig.isEnabledSNI()));
+        final var httpConnectionFactory = new HttpConnectionFactory(httpsConfig);
+
+        // SSL Connection Factory
+        final var ssl = securityConfig.getSslConnectionFactory(HttpVersion.HTTP_1_1.asString());
+        final var sslConnector = new ServerConnector(server, ssl, httpConnectionFactory);
         sslConnector.setPort(this.inetSocketAddress.getPort());
 
         server.addConnector(sslConnector);
         return server;
-    }
-
-    private HttpConnectionFactory httpConfiguration(final InetSocketAddress inetSocketAddress) {
-        final HttpConfiguration httpConfig = new HttpConfiguration();
-        httpConfig.setSecurePort(inetSocketAddress.getPort());
-        httpConfig.setSendXPoweredBy(true);
-
-        final HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-        httpsConfig.addCustomizer(new SecureRequestCustomizer());
-        return new HttpConnectionFactory(httpsConfig);
     }
 }

@@ -100,7 +100,7 @@ public final class LightyServerConfigUtils {
             LOG.info("Trust keystore successfully loaded");
             LOG.debug("Creating Security config from keystore [{}] and trustKeystore [{}]", keystore, truststore);
             return new SecurityConfig(keystore, config.getKeyStorePassword(), truststore,
-                    config.getTrustKeyStorePassword(), config.isNeedClientAuth());
+                    config.getTrustKeyStorePassword(), config.isEnableSniHostCheck(), config.isNeedClientAuth());
         } catch (final IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException
                  | NoSuchProviderException | OperatorCreationException e) {
             throw new ConfigurationException("Unable to create KeyStore configuration", e);

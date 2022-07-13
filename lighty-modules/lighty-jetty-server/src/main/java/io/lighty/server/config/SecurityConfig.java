@@ -18,15 +18,17 @@ public class SecurityConfig {
     private final String ksPassword;
     private final String trustKsPassword;
     private final Server server;
+    private final boolean enabledSNI;
     private final boolean isNeedClientAuth;
 
     public SecurityConfig(final KeyStore keyStore, final String ksPassword, final KeyStore trustKeyStore,
-                          final String trustKsPassword, final boolean isNeedClientAuth) {
+                          final String trustKsPassword, final boolean isNeedClientAuth, final boolean isEnabledSNI) {
         this.keyStore = keyStore;
         this.ksPassword = ksPassword;
         this.trustKeyStore = trustKeyStore;
         this.trustKsPassword = trustKsPassword;
         this.isNeedClientAuth = isNeedClientAuth;
+        this.enabledSNI = isEnabledSNI;
         server = new Server();
         initFactoryCtx();
     }
@@ -38,9 +40,14 @@ public class SecurityConfig {
         server.setKeyStorePassword(ksPassword);
         server.setCipherComparator(HTTP2Cipher.COMPARATOR);
         server.setNeedClientAuth(isNeedClientAuth);
+        server.setSniRequired(enabledSNI);
     }
 
     public SslConnectionFactory getSslConnectionFactory(final String protocol) {
         return new SslConnectionFactory(server, protocol);
+    }
+
+    public boolean isEnabledSNI() {
+        return enabledSNI;
     }
 }

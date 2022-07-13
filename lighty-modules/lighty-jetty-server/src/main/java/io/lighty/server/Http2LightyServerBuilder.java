@@ -36,7 +36,7 @@ public class Http2LightyServerBuilder extends LightyServerBuilder {
         httpsConfig.setSecurePort(this.inetSocketAddress.getPort());
         httpsConfig.setSendXPoweredBy(true);
         httpsConfig.setSendServerVersion(true);
-        httpsConfig.addCustomizer(new SecureRequestCustomizer());
+        httpsConfig.addCustomizer(new SecureRequestCustomizer(securityConfig.isEnabledSNI()));
 
         // HTTP/2 Connection Factory
         final var h2 = new HTTP2ServerConnectionFactory(httpsConfig);

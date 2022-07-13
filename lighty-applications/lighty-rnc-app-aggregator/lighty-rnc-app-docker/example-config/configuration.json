@@ -57,6 +57,7 @@
       "useHttps": false,
       "useHttp2": false,
       "needClientAuth": false,
+      "enableSniHostCheck": false,
       "keyStorePassword":"8pgETwat",
       "keyStoreType":"JKS",
       "keyStoreFilePath":"keystore/lightyio.jks",

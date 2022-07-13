@@ -26,6 +26,8 @@ lighty:
     useHttp2: false
     useHttps: false
     needClientAuth: false
+    # Set SNI host check to false if is required to send request from localhost, otherwise should be true
+    enableSniHostCheck: false
     keyStorePassword: "8pgETwat"
     keyStoreType: "JKS"
     keyStoreDirectory: "keystore"
