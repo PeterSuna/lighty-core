@@ -91,7 +91,5 @@ deploymentSecurity:
 resources:
   limits:
     memory: 4Gi
-    cpu: 1
   requests:
     memory: 512Mi
-    cpu: 0.5
