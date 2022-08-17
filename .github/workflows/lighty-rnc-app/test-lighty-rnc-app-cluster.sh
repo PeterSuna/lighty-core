@@ -10,7 +10,6 @@
 CONTROLLER_PORT=8888
 SIMULATOR_PORT=17830
 HTTP_STATUS_CODES=("200" "201" "202" "204")
-READY_PODS=false
 declare -a test_results
 
 # Start lighty-netconf-simulator in minikube network
@@ -32,13 +31,48 @@ for i in {1..20} ; do
     sleep 1
 done
 
-sleep 35
+isAllPodsReady() {
+  pods_status=$(kubectl get pods -l app.kubernetes.io/name=lighty-rnc-app-helm -o custom-columns=":status.containerStatuses[*].ready")
+  for podReady in $pods_status;
+  do
+    if [[ $podReady =~ .*"true".* ]]
+    then \
+      echo "Pod is ready [$podReady]"
+    else
+      echo "Pod is not ready [$podReady]"
+      return 1
+    fi
+  done
+  return 0
+}
+
+waitUntilPodsAreReady() {
+  sleep 20
+  for i in {1..20} ;
+    do
+      if isAllPodsReady;
+      then
+        echo "PODS are ready"
+        kubectl get pods -l app.kubernetes.io/name=lighty-rnc-app-helm -o custom-columns=":status.containerStatuses[*].ready" | xargs
+        break;
+      fi
+      echo "Pods are not ready, counter: $i"
+      sleep 5
+  done
+  if ! updatePodReadyState
+  then
+    echo "PODS are not ready in required time."
+    stopTest
+  fi
+}
+
+waitUntilPodsAreReady
 # List pods
 minikube kubectl -- get pods
 
 # List Services
 minikube kubectl -- get services
-KUB_NAMES=( $(kubectl get pods --no-headers -o custom-columns=":metadata.name") )
+read -ra KUB_NAMES -d '' <<<"$(kubectl get pods --no-headers -o custom-columns=":metadata.name")"
 POD_CONTROLLER_IPS=$(kubectl get pods -l app.kubernetes.io/name=lighty-rnc-app-helm -o custom-columns=":status.podIP" | xargs)
 
 CTRL0_IP=$(kubectl get pod "${KUB_NAMES[0]}" -o custom-columns=":status.podIP" | xargs)
@@ -57,13 +91,14 @@ printLine() {
 }
 
 assertHttpStatusCode() {
+  read -ra arr -d '' <<<"$1"
   printLine
-  if [[ ${HTTP_STATUS_CODES[*]} =~ $1 ]]
+  if [[ ${HTTP_STATUS_CODES[*]} =~ ${arr[0]} ]]
   then
-    echo -e "HTTP request methods: $2\nURL: $3\nStatus Code: $1\nTest passed\n"
+    echo -e "HTTP request methods: ${arr[1]}\nURL: ${arr[2]}\nStatus Code: ${arr[0]}\nTest passed\n"
     test_results+=(0)
   else
-    echo -e "HTTP request methods: $2\nURL: $3\nStatus Code: $1\nTest failed\n"
+    echo -e "HTTP request methods: ${arr[1]}\nURL: ${arr[2]}\nStatus Code: ${arr[0]}\nTest failed\n"
     test_results+=(1)
   fi
 }
@@ -129,53 +164,15 @@ validateTestStatus() {
   fi
 }
 
-updatePodReadyState() {
-  pods_status=$(kubectl get pods -l app.kubernetes.io/name=lighty-rnc-app-helm -o custom-columns=":status.containerStatuses[*].ready")
-  for podReady in $pods_status;
-  do
-    echo "$podReady"
-    if [[ $podReady =~ .*"true".* ]]
-    then \
-      echo "Pod is ready [$podReady]"
-    else
-      echo "Pod is not ready [$podReady]"
-      return 1
-    fi
-  done
-  echo "Update pods status: $READY_PODS"
-  return 0
-}
-
-arePodsReady() {
-  sleep 30
-  for i in {1..20} ;
-    do
-      echo "Are pods ready status: $READY_PODS"
-      if updatePodReadyState;
-      then
-        echo "PODS are ready"
-        kubectl get pods -l app.kubernetes.io/name=lighty-rnc-app-helm -o custom-columns=":status.containerStatuses[*].ready" | xargs
-        break;
-      fi
-      echo "Pods are not ready, counter: $i"
-      sleep 5
-  done
-  if ! updatePodReadyState
-  then
-    echo "PODS are not ready in required time."
-    stopTest
-  fi
-}
-
 printLine
 echo "-- Lighty-rcgnmi-app curl tests --"
 
 # Cluster state (:8558/cluster/members)
 for pod_controller_ip in $POD_CONTROLLER_IPS; \
 do \
-  assertHttpStatusCode $(curl -o /dev/null -s -w "%{http_code} GET %{url_effective}\n" \
+  assertHttpStatusCode "$(curl -o /dev/null -s -w "%{http_code} GET %{url_effective}\n" \
    -H "Content-Type: application/json" \
-   http://$pod_controller_ip:8558/cluster/members) \
+   http://"$pod_controller_ip":8558/cluster/members)" \
 ;done
 sleep 1
 validateTestStatus
@@ -184,15 +181,15 @@ validateTestStatus
 
 for pod_controller_ip in $POD_CONTROLLER_IPS; \
 do \
-  assertHttpStatusCode $(curl -o /dev/null -s -w "%{http_code} GET %{url_effective}\n" \
+  assertHttpStatusCode "$(curl -o /dev/null -s -w "%{http_code} GET %{url_effective}\n" \
    -H "Content-Type: application/json" \
-   http://$pod_controller_ip:$CONTROLLER_PORT/restconf/operations) \
+   http://"$pod_controller_ip":"$CONTROLLER_PORT"/restconf/operations)" \
 ;done
 sleep 1
 
 # Add node into topology
-  assertHttpStatusCode $(curl -X PUT -o /dev/null -s -w "%{http_code} PUT %{url_effective}\n" \
-  http://"$CTRL0_IP":$CONTROLLER_PORT/restconf/data/network-topology:network-topology/topology=topology-netconf/node=node-"${SIMULATOR_IP//.}" \
+  assertHttpStatusCode "$(curl -X PUT -o /dev/null -s -w "%{http_code} PUT %{url_effective}\n" \
+  http://"$CTRL0_IP":"$CONTROLLER_PORT"/restconf/data/network-topology:network-topology/topology=topology-netconf/node=node-"${SIMULATOR_IP//.}" \
   -H 'Content-Type: application/json' \
   -d '{
       "netconf-topology:node" :[
@@ -206,15 +203,15 @@ sleep 1
 	      "keepalive-delay": 0
       }
     ]
-  }')
+  }')"
 sleep 1
 
 printLine
 echo "Check if netconf-simulator is connected"
 connection_status="not-connected"
 for i in {1..20} ; do
-  connection_status=$(assertNodeConnected $(curl -X GET -s \
-  'http://'"$CTRL0_IP"':'"$CONTROLLER_PORT"'/restconf/data/network-topology:network-topology/topology=topology-netconf/node='node-"${SIMULATOR_IP//.}"'/netconf-node-topology:connection-status'))
+  connection_status=$(assertNodeConnected "$(curl -X GET -s \
+  'http://'"$CTRL0_IP"':'"$CONTROLLER_PORT"'/restconf/data/network-topology:network-topology/topology=topology-netconf/node='node-"${SIMULATOR_IP//.}"'/netconf-node-topology:connection-status')")
   echo -e "Connection status: $connection_status"
   if [[ $connection_status == "connected" ]]
   then
@@ -226,9 +223,9 @@ done
 
 for pod_controller_ip in $POD_CONTROLLER_IPS; \
 do \
-  assertHttpStatusCode $(curl -o /dev/null -s -w "%{http_code} GET %{url_effective}\n" \
+  assertHttpStatusCode "$(curl -o /dev/null -s -w "%{http_code} GET %{url_effective}\n" \
     -H "Content-Type: application/json" \
-     http://$pod_controller_ip:$CONTROLLER_PORT/restconf/data/network-topology:network-topology) \
+     http://"$pod_controller_ip":"$CONTROLLER_PORT"/restconf/data/network-topology:network-topology)" \
 ;done
 sleep 1
 
@@ -242,7 +239,7 @@ minikube kubectl get deployments
 
 echo "Scale replicas to 5"
 kubectl scale deployments/lighty-rnc-app-lighty-rnc-app-helm --replicas=5
-arePodsReady
+waitUntilPodsAreReady
 
 echo "Show pods"
 # List pods
@@ -257,7 +254,7 @@ validateTestStatus
 echo "Test resize deployment back to 3 clusters"
 echo "Scale replicas to 3"
 kubectl scale deployments/lighty-rnc-app-lighty-rnc-app-helm --replicas=3
-sleep 35
+waitUntilPodsAreReady
 
 echo "Show pods"
 # List pods
@@ -269,8 +266,8 @@ POD_CONTROLLER_IPS=$(kubectl get pods -l app.kubernetes.io/name=lighty-rnc-app-h
 assertPodsTopologyResponse
 
 ## Remove device
-assertHttpStatusCode $(curl -X DELETE -o /dev/null -s -w "%{http_code} DELETE %{url_effective}\n" \
- http://"$CTRL0_IP":$CONTROLLER_PORT/restconf/data/network-topology:network-topology/topology=topology-netconf/node=node-"${SIMULATOR_IP//.}")
+assertHttpStatusCode "$(curl -X DELETE -o /dev/null -s -w "%{http_code} DELETE %{url_effective}\n" \
+ http://"$CTRL0_IP":"$CONTROLLER_PORT"/restconf/data/network-topology:network-topology/topology=topology-netconf/node=node-"${SIMULATOR_IP//.}")"
 
 validateTestStatus
 
