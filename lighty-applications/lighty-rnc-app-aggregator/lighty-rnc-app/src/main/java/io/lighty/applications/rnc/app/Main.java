@@ -28,7 +28,6 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.log4j.spi.LoggerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
