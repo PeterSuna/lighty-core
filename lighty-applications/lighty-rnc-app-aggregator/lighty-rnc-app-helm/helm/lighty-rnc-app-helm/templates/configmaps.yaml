@@ -6,6 +6,9 @@ kind: ConfigMap
 data:
   lighty-config.json: |
     {
+        "modules": {
+            "moduleTimeoutSeconds": {{ .Values.lighty.moduleTimeOut | quote }}
+        },
         "controller":{
             "restoreDirectoryPath":"./clustered-datastore-restore",
             "maxDataBrokerFutureCallbackQueueSize":1000,
@@ -42,6 +45,7 @@ data:
                   { "usedBy": "RESTCONF", "name": "subscribe-to-notification", "revision": "2016-10-28", "nameSpace": "subscribe:to:notification"},
                   { "usedBy": "RESTCONF", "name": "sal-remote-augment", "revision": "2014-07-08", "nameSpace": "urn:sal:restconf:event:subscription"},
                   { "usedBy": "RESTCONF", "name": "ietf-restconf", "revision": "2017-01-26", "nameSpace": "urn:ietf:params:xml:ns:yang:ietf-restconf"},
+                  { "usedBy": "RESTCONF", "name": "instance-identifier-patch-module", "revision": "2015-11-21", "nameSpace": "instance:identifier:patch:module"},
                   { "usedBy": "RESTCONF/NETCONF", "name": "ietf-yang-library", "revision": "2019-01-04", "nameSpace": "urn:ietf:params:xml:ns:yang:ietf-yang-library"},
                   { "usedBy": "NETCONF", "name": "netconf-keystore", "revision": "2017-10-17", "nameSpace": "urn:opendaylight:netconf:keystore"},
                   { "usedBy": "NETCONF", "name": "netconf-node-topology", "revision": "2015-01-14", "nameSpace": "urn:opendaylight:netconf-node-topology"},
@@ -94,11 +98,20 @@ data:
         }
     }
 
-  log4j.properties: |
-    log4j.rootLogger=INFO, STDOUT
-    log4j.appender.STDOUT=org.apache.log4j.ConsoleAppender
-    log4j.appender.STDOUT.layout=org.apache.log4j.PatternLayout
-    log4j.appender.STDOUT.layout.ConversionPattern=%5p %d{HH:mm:ss} [%c] (%F:%L) - %m%n
+  log4j2.xml: |
+    <Configuration status="INFO">
+        <Appenders>
+            <Console name="ConsoleAppender" target="SYSTEM_OUT">
+                <PatternLayout pattern="%5p %d{HH:mm:ss} [%c] (%F:%L) - %m%n" />
+            </Console>
+        </Appenders>
+    
+        <Loggers>
+            <Root level="INFO">
+                <AppenderRef ref="ConsoleAppender"/>
+            </Root>
+        </Loggers>
+    </Configuration>  
 
   akka-node-k8s.conf: |
     akka {

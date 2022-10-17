@@ -26,19 +26,16 @@ To build and start the RCgNMI application in your local environment, follow thes
 3. Start the application by running it's _.jar_ file:    
    `java -jar lighty-rcgnmi-app-<version>.jar`
 
-4. To start the application with a custom lighty.io configuration, use the argument _-c_ and for a custom initial log4j configuration, use argument _-l_:  
-   `java -jar lighty-rcgnmi-app-<version>.jar -c /path/to/config-file -l /path/to/log4j-config-file`  
+4. To start the application with a custom lighty.io configuration, use the argument _`-c`:
+   `java -jar lighty-rcgnmi-app-<version>.jar -c /path/to/config-file`
 
-   Example configuration files are located on following path:  
-   `lighty-rcgnmi-app-docker/example-config/*`
+   To extend lighty modules time-out use `"modules": {"moduleTimeoutSeconds": SECONDS },` property inside JSON configuration. This property increases the time after which the exception is thrown if the module is not successfully initialized by then (Default 60).
+   Example configuration files are located on following folder [example-config](lighty-rcgnmi-app/src/main/resources/example-config).
 
-5. (Optional) To extend lighty modules time-out use the argument `-t/--timeout-in-seconds`. This argument increases the time after which the exception is thrown if the module is not successfully initialized by then. (Default 60)
-   `java -jar lighty-rcgnmi-app-<version>.jar -t 90`
-
-6. If the application was started successfully, then a log similar should be present in the console:  
+5. If the application was started successfully, then a log similar should be present in the console:  
   ` INFO [main] (RCgNMIApp.java:98) - RCgNMI lighty.io application started in 10.10 s`
 
-7. Test the RCgNMI lighty.io application. Default RESTCONF port is `8888`  
+6. Test the RCgNMI lighty.io application. Default RESTCONF port is `8888`  
    The default credential for http requests is login:`admin`, password: `admin`. 
 
 ## How to Use the RCgNMI Example App
@@ -342,8 +339,8 @@ To build and start the RCgNMI lighty.io application using Docker in a local envi
   ```
    docker run -it --name lighty-rcgnmi --network host
    -v /absolute_path/to/config-file/configuration.json:/lighty-rcgnmi/configuration.json
-   -v /absolute_path/to/log4j-file/log4j.properties:/lighty-rcgnmi/log4j.properties
-   --rm lighty-rcgnmi -c configuration.json -l log4j.properties
+   -v /absolute_path/to/log4j-file/log4j2.xml:/lighty-rcgnmi/log4j2.xml
+   --rm lighty-rcgnmi -c configuration.json -l log4j2.xml
   ```
 
 If your _configuration.json_ file specifies a path to the initial configuration data to load on start up (for more information, check the [lighty-controller](../../lighty-core/lighty-controller)), you need to mount the JSON/XML file as well:
@@ -433,19 +430,26 @@ For example, if your initial json data contains node in gNMI topology:
 ```
 and the gNMI device is running, the connection should be established upon startup. For testing purposes, you can use [lighty-gnmi-device-simulator](https://github.com/PANTHEONtech/lighty-netconf-simulator) as a gNMI device.
 
-## JMX debugging
-Java Management Extensions is a tool enabled by default, which makes it easy to change the runtime configuration of the application.
+## Setup Logging
+Default logging configuration may be overwritten by JVM option
+```-Dlog4j.configurationFile=path/to/log4j2.xml```
 
+Content of ```log4j2.xml``` is described [here](https://logging.apache.org/log4j/2.x/manual/configuration.html).
+
+## Update logger with JMX
+Java Management Extensions is a tool enabled by default, which makes it easy to change the runtime
+configuration of the application. Among other options, we use [log4j2](https://logging.apache.org/log4j/2.0/manual/jmx.html)
+which has build in option to change logging behaviour during runtime via JMX client which can be connected to running lighty instance.
 1. Start the application (see previous sections)
 2. Connect the JXM client
-  We recommend using `jconsole` because it is part of the standard java JRE.
-  The command for connecting jconsole to JMX server is:
-    `jconsole <ip-of-running-lighty>:<JMX-port>`, the default JMX-port is 1099.
+   We recommend using `jconsole` because it is part of the standard Java JRE.
+   The command for connecting jconsole to JMX server is:  
+   `jconsole <ip-of-running-lighty>:<JMX-port>`, the default JMX-port is 1099.
 
 This approach works **only if the application is running locally**.
 
-If you want to connect the JMX client to application running remotely or in a container (k8s deployment or/and docker), you need to start the application using following JAVA_OPTS:
-
+If you want to connect the JMX client to the application running remotely or containerized (k8s deployment or/and docker),
+you need to start the application using the following JAVA_OPTS:
 ```
 JAVA_OPTS = -Dcom.sun.management.jmxremote
              -Dcom.sun.management.jmxremote.authenticate=false
@@ -455,28 +459,34 @@ JAVA_OPTS = -Dcom.sun.management.jmxremote
              -Dcom.sun.management.jmxremote.rmi.port=<JMX_PORT>
              -Djava.rmi.server.hostname=127.0.0.1
 ```
-
 Then run `java $JAVA_OPTS -jar lighty-rcgnmi-app-<version> ...`
 
-## Connecting JMX client to application running in docker
-1. As we said, if we want to be able to connect the JMX, we need to start the app with JAVA_OPTS described in the previous chapter.
+If you want to completely disable logger JMX option run application with following JAVA_OPTS
+`java -Dlog4j2.disable.jmx=true -jar lighty-rcgnmi-app-<version> ...`
 
-In docker the most convenient way to do this is to create env.file and run the docker run with `--env-file env.file` argument. The .env file must contain the definition of the described JAVA_OPTS environment variable.
+### Connecting JMX client to application running in docker
+1. If we want to be able to connect the JMX, we need to start the app with JAVA_OPTS, as described in the
+   previous chapter.
+   In Docker, the most convenient way to do this is to create env.file and run the docker run with `--env-file env.file` argument
+   The env.file must contain the definition of the described JAVA_OPTS environment variable.
+   We also need to publish the container JMX_PORT to host, this is done via `-p <JMX_PORT>:<JMX_PORT>` argument.
+   So the docker run command becomes:
+   `docker run -it --name lighty-rcgnmi --env-file env.file -p <JMX_PORT>:<JMX_PORT> ...`
+   The rest of the command stays the same as explained in previous chapters.
+2. Connect the JMX client via the command `jconsole <ip-of-container>:<JMX_PORT>`.
 
-We also need to publish the container JMX_PORT to host, this is done via `-p <JMX_PORT>:<JMX_PORT>` argument. So the docker run command becomes:
-
-`docker run -it --name lighty-rcgnmi --env-file env.file -p <JMX_PORT>:<JMX_PORT> ...`
-
-The rest of the command stays the same as explained in previous chapters.
-
-2. Connect the JMX client via command `jconsole <ip-of-container>:<JMX_PORT>`.
-
-## Connecting JMX client to application deployed in kubernetes
-Once you have deployed the application via our provided helm chart in which you enabled jmxRemoting, you just need to forward the JMX port of the pod in which the instance of the application you want to debug is running.
-
+### Connecting a JMX client to the application, deployed in kubernetes
+Once you have deployed the application via our provided helm chart, in which you enabled jmxRemoting,
+you just need to forward the JMX port of the pod, in which the instance of the application you want to debug, is running.
 In Kubernetes, this is done via `kubectl port-forward` command.
-
 1. Forward the pod's JMX port, run `kubectl port-forward <name-of-the-pod> <JMX_PORT>`
 2. Connect JMX client, run `jconsole <pod-ip>:<JMX-port>`
+
+### Update Logger level in runtime with JMX
+After successful connection, JMX client to lighty app is able to update logger information in runtime.
+[Log4j2 JMX](https://logging.apache.org/log4j/2.0/manual/jmx.html) provides more configuration but, for this example we show how to change logger level.
+1) Open `MBeans` window and chose `org.apache.logging.log4j2`
+3) Chose from dropdown  `loggers` than `StatusLogger` and `level`
+4) By double-clicking on level value, can be updated to desire [state](https://logging.apache.org/log4j/2.x/manual/customloglevels.html).
 
 For a custom solution or commercial support, [contact us here.](https://pantheon.tech/contact-us)

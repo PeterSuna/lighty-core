@@ -34,21 +34,18 @@ To build and start the lighty.io RNC application in the local environment, follo
 3. Start the application by running it's _.jar_ file:  
    `java -jar lighty-rnc-app-<version>.jar`
    
-4. To start the application with custom lighty configuration, use arg -c and for custom initial log4j configuration use argument -l:  
-   `java -jar lighty-rnc-app-<version>.jar -c /path/to/config-file -l /path/to/log4j-config-file`  
-   
-   Example configuration files are located on following path:  
-   `lighty-rnc-app-docker/example-config/*`
+4. To start the application with custom lighty configuration, use arg `-c`:
+   `java -jar lighty-rnc-app-<version>.jar -c /path/to/config-file`
 
-5. (Optional) To extend lighty modules time-out use the argument `-t/--timeout-in-seconds`. This argument increases the time after which the exception is thrown if the module is not successfully initialized by then. (Default 60)
-   `java -jar lighty-rcgnmi-app-<version>.jar -t 90`
+   To extend lighty modules time-out use `"modules": { "moduleTimeoutSeconds": SECONDS },` property inside JSON configuration. This property increases the time after which the exception is thrown if the module is not successfully initialized by then (Default 60).
+   Example configuration files are located on following folder [example-config](lighty-rnc-app-docker/example-config).
 
-6. If the application was started successfully, then a log similar should be present in the console:  
+5. If the application was started successfully, then a log similar should be present in the console:  
    `INFO [main] (Main.java:80) - RNC lighty.io application started in 5989.108ms`
 
-7. Test the lighty.io RNC application. The default RESTCONF port is `8888`
+6. Test the lighty.io RNC application. The default RESTCONF port is `8888`
 
-8. The default credentials for http requests is login:`admin`, password: `admin`. 
+7. The default credentials for http requests is login:`admin`, password: `admin`. 
 To edit the user's credentials, [idmtool](https://docs.opendaylight.org/projects/aaa/en/stable-aluminium/user-guide.html#idmtool) can be used to:
     - create new `etc` directory and create there `org.ops4j.pax.web.cfg` file
     - add this two lines in the `org.ops4j.pax.web.cfg` file: 
@@ -76,7 +73,7 @@ To edit the user's credentials, [idmtool](https://docs.opendaylight.org/projects
     
     Also, it is possible to configure user's credentials via [REST](https://docs.opendaylight.org/projects/aaa/en/latest/user-guide.html#configuration-using-the-restful-web-service)
 
-9. For using a SSL connection, the correct certificate must be used.
+8. For using a SSL connection, the correct certificate must be used.
 By default, a test certificate is used (`lighty-rnc-module/src/main/resources/keystore/lightyio.jks`).
 For generating a JKS file `keytool` utility can be used. Example of command to regenerate keystore with self-signed certificate:
 
@@ -181,12 +178,19 @@ and the device is running, the connection should be established upon startup.
 For testing purposes, you can use [lighty-netconf-simulator](https://github.com/PANTHEONtech/lighty-netconf-simulator)
 as a netconf device.
 
-## JMX debugging
+## Setup Logging
+Default logging configuration may be overwritten by JVM option
+```-Dlog4j.configurationFile=path/to/log4j2.xml```
+
+Content of ```log4j2.xml``` is described [here](https://logging.apache.org/log4j/2.x/manual/configuration.html).
+
+
+## Update logger with JMX
 Java Management Extensions is a tool enabled by default which makes it easy to change runtime
-configuration of the application. Among other options, we expose the option to change logging behaviour during runtime
-via JMX client which can be connected to running lighty instance.
+configuration of the application. Among other options, we use [log4j2](https://logging.apache.org/log4j/2.0/manual/jmx.html)
+which has build in option to change logging behaviour during runtime via JMX client which can be connected to running lighty instance.
 1. Start the application (see previous sections)
-2. Connect the JXM client  
+2. Connect the JXM client
   We recommend using `jconsole` because it is part of the standard Java JRE.  
   The command for connecting jconsole to JMX server is:  
     `jconsole <ip-of-running-lighty>:<JMX-port>`, the default JMX-port is 1099.
@@ -194,7 +198,7 @@ via JMX client which can be connected to running lighty instance.
 This approach works only if the application is running locally.  
   
 If you want to connect the JMX client to the application running remotely or containerized (k8s deployment or/and docker),
-you need to start the application using the following JAVA_OPTS:  
+you need to start the application using the following JAVA_OPTS:
 ```
 JAVA_OPTS = -Dcom.sun.management.jmxremote
              -Dcom.sun.management.jmxremote.authenticate=false
@@ -203,21 +207,33 @@ JAVA_OPTS = -Dcom.sun.management.jmxremote
              -Dcom.sun.management.jmxremote.port=<JMX_PORT>
              -Dcom.sun.management.jmxremote.rmi.port=<JMX_PORT>
              -Djava.rmi.server.hostname=127.0.0.1
-```          
-Then run `java $JAVA_OPTS -jar lighty-rnc-app-<version> ...`  
-## Connecting JMX client to application running in docker
+```
+Then run `java $JAVA_OPTS -jar lighty-rnc-app-<version> ...`
+
+If you want to completely disable logger JMX option run application with following JAVA_OPTS
+`java -Dlog4j2.disable.jmx=true -jar lighty-rnc-app-<version> ...`
+
+### Connecting JMX client to application running in docker
 1. If we want to be able to connect the JMX, we need to start the app with JAVA_OPTS, as described in the
- previous chapter.  
+ previous chapter.
  In Docker, the most convenient way to do this is to create env.file and run the docker run with `--env-file env.file` argument
- The env.file must contain the definition of the described JAVA_OPTS environment variable.  
+ The env.file must contain the definition of the described JAVA_OPTS environment variable.
  We also need to publish the container JMX_PORT to host, this is done via `-p <JMX_PORT>:<JMX_PORT>` argument.
  So the docker run command becomes:  
   `docker run -it --name lighty-rnc --env-file env.file -p <JMX_PORT>:<JMX_PORT> ...`
  The rest of the command stays the same as explained in previous chapters.
  2. Connect the JMX client via the command `jconsole <ip-of-container>:<JMX_PORT>`.
- ## Connecting a JMX client to the application, deployed in kubernetes
+ 
+### Connecting a JMX client to the application, deployed in kubernetes
 Once you have deployed the application via our provided helm chart, in which you enabled jmxRemoting,
 you just need to forward the JMX port of the pod, in which the instance of the application you want to debug, is running.
 In Kubernetes, this is done via `kubectl port-forward` command.
-1. Forward the pod's JMX port, run `kubectl port-forward <name-of-the-pod> <JMX_PORT>`  
+1. Forward the pod's JMX port, run `kubectl port-forward <name-of-the-pod> <JMX_PORT>`
 2. Connect JMX client, run `jconsole <pod-ip>:<JMX-port>`
+
+### Update Logger level in runtime with JMX
+After successful connection, JMX client to lighty app is able to update logger information in runtime.
+[Log4j2 JMX](https://logging.apache.org/log4j/2.0/manual/jmx.html) provides more configuration but, for this example we show how to change logger level.
+1) Open `MBeans` window and chose `org.apache.logging.log4j2`
+3) Chose from dropdown  `loggers` than `StatusLogger` and `level`
+4) By double-clicking on level value, can be updated to desire [state](https://logging.apache.org/log4j/2.x/manual/customloglevels.html).

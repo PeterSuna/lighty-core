@@ -49,7 +49,18 @@
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opendaylight.aaa</groupId>
+            <artifactId>aaa-shiro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opendaylight.aaa.web</groupId>
+            <artifactId>servlet-jersey2</artifactId>
+        </dependency>
         <!--Tests-->
         <dependency>
             <groupId>org.testng</groupId>
