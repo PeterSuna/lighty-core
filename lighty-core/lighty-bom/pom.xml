@@ -221,7 +221,7 @@
             <dependency>
                 <groupId>io.lighty.resources</groupId>
                 <artifactId>start-script</artifactId>
-                <version>17.0.0-SNAPSHOT</version>
+                <version>17.0.0</version>
             </dependency>
 
             <!-- Dependencies and resources which should not normally leak into production -->
