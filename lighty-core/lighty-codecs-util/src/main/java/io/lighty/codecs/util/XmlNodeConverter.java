@@ -30,7 +30,7 @@ import org.opendaylight.yangtools.yang.data.api.schema.stream.NormalizedNodeWrit
 import org.opendaylight.yangtools.yang.data.codec.xml.XMLStreamNormalizedNodeStreamWriter;
 import org.opendaylight.yangtools.yang.data.codec.xml.XmlParserStream;
 import org.opendaylight.yangtools.yang.data.impl.schema.ImmutableNormalizedNodeStreamWriter;
-import org.opendaylight.yangtools.yang.data.impl.schema.NormalizedNodeResult;
+import org.opendaylight.yangtools.yang.data.impl.schema.NormalizationResultHolder;
 import org.opendaylight.yangtools.yang.model.api.EffectiveModelContext;
 import org.opendaylight.yangtools.yang.model.util.SchemaInferenceStack.Inference;
 import org.slf4j.Logger;
@@ -148,12 +148,12 @@ public class XmlNodeConverter implements NodeConverter {
             throw new DeserializationException(e);
         }
 
-        final NormalizedNodeResult result = new NormalizedNodeResult();
+        final NormalizationResultHolder result = new NormalizationResultHolder();
         final NormalizedNodeStreamWriter streamWriter = ImmutableNormalizedNodeStreamWriter.from(result);
         try (XmlParserStream xmlParser = XmlParserStream.create(streamWriter, inference)) {
             xmlParser.parse(reader);
-            return result.getResult();
-        } catch (XMLStreamException | URISyntaxException | SAXException | IOException e) {
+            return result.getResult().data();
+        } catch (XMLStreamException | IOException e) {
             throw new DeserializationException(e);
         } finally {
             try {

@@ -8,9 +8,9 @@
 package io.lighty.modules.southbound.netconf.impl;
 
 import static java.util.Objects.requireNonNull;
-import static org.opendaylight.netconf.sal.connect.netconf.util.NetconfMessageTransformUtil.NETCONF_OPERATION_QNAME;
-import static org.opendaylight.netconf.sal.connect.netconf.util.NetconfMessageTransformUtil.NETCONF_RUNNING_QNAME;
-import static org.opendaylight.netconf.sal.connect.netconf.util.NetconfMessageTransformUtil.toId;
+import static org.opendaylight.netconf.client.mdsal.impl.NetconfMessageTransformUtil.NETCONF_OPERATION_QNAME;
+import static org.opendaylight.netconf.client.mdsal.impl.NetconfMessageTransformUtil.NETCONF_RUNNING_QNAME;
+import static org.opendaylight.netconf.client.mdsal.impl.NetconfMessageTransformUtil.toId;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -20,19 +20,19 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import org.opendaylight.mdsal.dom.api.DOMRpcResult;
 import org.opendaylight.mdsal.dom.api.DOMRpcService;
 import org.opendaylight.netconf.api.EffectiveOperation;
-import org.opendaylight.netconf.sal.connect.netconf.util.NetconfMessageTransformUtil;
+import org.opendaylight.netconf.client.mdsal.impl.NetconfMessageTransformUtil;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.datastores.rev180214.Running;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.netconf.nmda.rev190107.edit.data.input.EditContent;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
-import org.opendaylight.yangtools.rfc7952.data.api.NormalizedMetadata;
-import org.opendaylight.yangtools.rfc7952.data.util.ImmutableMetadataNormalizedAnydata;
-import org.opendaylight.yangtools.rfc7952.data.util.ImmutableNormalizedMetadata;
+import org.opendaylight.yangtools.yang.data.api.schema.NormalizedMetadata;
+import org.opendaylight.yangtools.yang.data.impl.schema.ImmutableNormalizedMetadata;
 import org.opendaylight.yangtools.yang.common.Empty;
 import org.opendaylight.yangtools.yang.common.QName;
 import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
@@ -50,9 +50,8 @@ import org.opendaylight.yangtools.yang.data.api.schema.stream.YangInstanceIdenti
 import org.opendaylight.yangtools.yang.data.impl.schema.Builders;
 import org.opendaylight.yangtools.yang.data.impl.schema.ImmutableNodes;
 import org.opendaylight.yangtools.yang.data.impl.schema.ImmutableNormalizedNodeStreamWriter;
-import org.opendaylight.yangtools.yang.data.impl.schema.NormalizedNodeResult;
+import org.opendaylight.yangtools.yang.data.impl.schema.NormalizationResultHolder;
 import org.opendaylight.yangtools.yang.data.impl.schema.builder.impl.ImmutableAnydataNodeBuilder;
-import org.opendaylight.yangtools.yang.data.util.ImmutableNormalizedAnydata;
 import org.opendaylight.yangtools.yang.model.api.EffectiveModelContext;
 import org.opendaylight.yangtools.yang.model.util.SchemaInferenceStack;
 
@@ -130,7 +129,7 @@ public class NetconfNmdaBaseServiceImpl extends NetconfBaseServiceImpl implement
                                                              Optional<EffectiveOperation> defaultEffectiveOperation) {
 
         final var parentPath = dataPath.isEmpty() ? dataPath : dataPath.coerceParent();
-        final var result = new NormalizedNodeResult();
+        final var result = new NormalizationResultHolder();
         try (var streamWriter = ImmutableNormalizedNodeStreamWriter.from(result)) {
             try (var iidWriter = YangInstanceIdentifierWriter.open(streamWriter,
                     getEffectiveModelContext(), parentPath);
@@ -140,7 +139,7 @@ public class NetconfNmdaBaseServiceImpl extends NetconfBaseServiceImpl implement
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to convert " + dataPath, e);
         }
-        final NormalizedNode editNNContent = result.getResult();
+        final NormalizedNode editNNContent = result.getResult().data();
 
         final NormalizedMetadata metadata = dataEffectiveOperation
                 .map(oper -> leafMetadata(dataPath, oper))
@@ -150,7 +149,7 @@ public class NetconfNmdaBaseServiceImpl extends NetconfBaseServiceImpl implement
         final AnydataNode<NormalizedAnydata> editContent = ImmutableAnydataNodeBuilder
                 .create(NormalizedAnydata.class)
                 .withNodeIdentifier(NETCONF_EDIT_DATA_CONFIG_NODEID)
-                .withValue(new ImmutableMetadataNormalizedAnydata(stack.toInference(), editNNContent, metadata))
+                .withValue(NormalizedAnydata.of(stack.toInference(), editNNContent, metadata))
                 .build();
 
         ChoiceNode editStructure = Builders.choiceBuilder().withNodeIdentifier(toId(EditContent.QNAME))
@@ -230,7 +229,7 @@ public class NetconfNmdaBaseServiceImpl extends NetconfBaseServiceImpl implement
 
         // Step one: open builders
         for (PathArgument arg : args) {
-            builders.push(ImmutableNormalizedMetadata.builder().withIdentifier(arg));
+            builders.push(new BuilderEntry(arg, ImmutableNormalizedMetadata.builder()).builder());
         }
 
         // Step two: set the top builder's metadata
@@ -244,7 +243,9 @@ public class NetconfNmdaBaseServiceImpl extends NetconfBaseServiceImpl implement
             final ImmutableNormalizedMetadata currentMeta = builders.pop().build();
             final ImmutableNormalizedMetadata.Builder parent = builders.peek();
             if (parent != null) {
-                parent.withChild(currentMeta);
+                for (PathArgument arg : args) {
+                    parent.withChild(arg,parent.build());
+                }
             } else {
                 return currentMeta;
             }
@@ -271,11 +272,17 @@ public class NetconfNmdaBaseServiceImpl extends NetconfBaseServiceImpl implement
         final AnydataNode<NormalizedAnydata> subtreeFilter =
                 ImmutableAnydataNodeBuilder.create(NormalizedAnydata.class)
                         .withNodeIdentifier(NETCONF_FILTER_NODEID)
-                        .withValue(new ImmutableNormalizedAnydata(stack.toInference(), filterNN))
+                        .withValue(NormalizedAnydata.of(stack.toInference(), filterNN))
                         .build();
         return Builders.choiceBuilder()
                 .withNodeIdentifier(NETCONF_FILTER_CHOICE_NODEID)
                 .withChild(subtreeFilter)
                 .build();
+    }
+    private record BuilderEntry(PathArgument identifier, ImmutableNormalizedMetadata.Builder builder) {
+        BuilderEntry {
+            requireNonNull(identifier);
+            requireNonNull(builder);
+        }
     }
 }

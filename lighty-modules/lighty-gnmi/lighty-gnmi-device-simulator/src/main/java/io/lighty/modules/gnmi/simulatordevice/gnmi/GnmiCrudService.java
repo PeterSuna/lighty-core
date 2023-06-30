@@ -35,9 +35,7 @@ import java.util.stream.Collectors;
 import org.opendaylight.yangtools.yang.common.QName;
 import org.opendaylight.yangtools.yang.common.QNameModule;
 import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
-import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier.AugmentationIdentifier;
 import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier.NodeIdentifierWithPredicates;
-import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier.PathArgument;
 import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
 import org.opendaylight.yangtools.yang.data.util.DataSchemaContextTree;
 import org.opendaylight.yangtools.yang.model.api.DataSchemaNode;
@@ -216,10 +214,6 @@ public class GnmiCrudService {
             resultingIdentifier = identifier.getParent();
         }
 
-        if (node.getIdentifier() instanceof AugmentationIdentifier && resultingIdentifier != null) {
-            resultingIdentifier = resultingIdentifier.getParent();
-        }
-
         if (isReplace) {
             dataService.writeDataByPath(DatastoreType.CONFIGURATION, resultingIdentifier,
                     node);
@@ -346,12 +340,7 @@ public class GnmiCrudService {
         final YangInstanceIdentifier expectedYIID = id.node(expectedQname);
         final var foundNode = DataSchemaContextTree.from(context).enterPath(expectedYIID);
         if (foundNode.isPresent()) {
-            PathArgument identifier = foundNode.get().node().getIdentifier();
-            if (identifier instanceof AugmentationIdentifier) {
-                return Optional.of(addAugmentationNodeToIdentifier(id, expectedQname));
-            } else {
                 return Optional.of(expectedYIID);
-            }
         }
         return Optional.empty();
     }
@@ -388,9 +377,7 @@ public class GnmiCrudService {
 
     private static YangInstanceIdentifier addAugmentationNodeToIdentifier(final YangInstanceIdentifier identifier,
             final QName augmentation) {
-        final HashSet<QName> augmentationQname = new HashSet<>();
-        augmentationQname.add(augmentation);
-        return identifier.node(AugmentationIdentifier.create(augmentationQname))
+        return identifier.node(YangInstanceIdentifier.NodeIdentifier.create(augmentation))
                 .node(augmentation);
     }
 }

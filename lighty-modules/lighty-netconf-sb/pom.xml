@@ -67,7 +67,7 @@
         </dependency>
         <dependency>
             <groupId>org.opendaylight.netconf</groupId>
-            <artifactId>sal-netconf-connector</artifactId>
+            <artifactId>netconf-client-mdsal</artifactId>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
@@ -76,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

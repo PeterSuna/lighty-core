@@ -9,6 +9,8 @@ package io.lighty.modules.southbound.netconf.tests;
 
 import static io.lighty.modules.southbound.netconf.tests.LightyTestUtils.MAX_START_TIME_MILLIS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +26,7 @@ import io.lighty.modules.southbound.netconf.impl.NetconfTopologyPluginBuilder;
 import io.lighty.modules.southbound.netconf.impl.config.NetconfConfiguration;
 import io.lighty.modules.southbound.netconf.impl.util.NetconfConfigUtils;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.mockito.Mock;
@@ -32,13 +35,12 @@ import org.opendaylight.mdsal.binding.api.DataBroker;
 import org.opendaylight.mdsal.binding.api.WriteTransaction;
 import org.opendaylight.mdsal.common.api.LogicalDatastoreType;
 import org.opendaylight.netconf.client.NetconfClientDispatcher;
-import org.opendaylight.netconf.nettyutil.ReconnectFuture;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Host;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.netconf.device.rev221225.credentials.Credentials;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.netconf.device.rev221225.credentials.credentials.LoginPasswordBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.netconf.device.rev230430.credentials.Credentials;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.netconf.device.rev230430.credentials.credentials.LoginPasswordBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.netconf.node.topology.rev221225.NetconfNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.netconf.node.topology.rev221225.NetconfNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
@@ -68,8 +70,6 @@ public class TopologyPluginsTest {
     private LightyModule netconfPlugin;
     @Mock
     private NetconfClientDispatcher dispatcher;
-    @Mock
-    private ReconnectFuture initFuture;
 
     private static LightyModule startSingleNodeNetconf(final LightyServices services,
                                                        final NetconfClientDispatcher dispatcher)
@@ -84,7 +84,7 @@ public class TopologyPluginsTest {
     public void beforeClass()
             throws ConfigurationException, ExecutionException, InterruptedException, TimeoutException {
         MockitoAnnotations.initMocks(this);
-        when(this.dispatcher.createReconnectingClient(any())).thenReturn(this.initFuture);
+        doReturn(mock(Future.class)).when(dispatcher).createClient(any());
 
         this.lightyController = LightyTestUtils.startController();
         RestConfConfiguration restConfConfig =
@@ -133,7 +133,7 @@ public class TopologyPluginsTest {
         final WriteTransaction writeTransaction = bindingDataBroker.newWriteOnlyTransaction();
         writeTransaction.mergeParentStructurePut(LogicalDatastoreType.CONFIGURATION, path, node);
         writeTransaction.commit().get();
-        verify(this.dispatcher, timeout(20000)).createReconnectingClient(any());
+        verify(this.dispatcher, timeout(20000)).createClient(any());
     }
 
 }

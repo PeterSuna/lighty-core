@@ -41,7 +41,8 @@ public class GetResponseToNormalizedNodeCodecTest {
         final Map.Entry<ImmutablePair<YangInstanceIdentifier, Gnmi.GetResponse>, NormalizedNode> prepared =
                 testCases.rootCase();
         final Optional<NormalizedNode> result = codec.apply(prepared.getKey().right, prepared.getKey().left);
-        assertEqualsCodecResult(prepared.getValue(), result);
+        NormalizedNode value = prepared.getValue();
+        assertEqualsCodecResult(value, result);
     }
 
     @Test
