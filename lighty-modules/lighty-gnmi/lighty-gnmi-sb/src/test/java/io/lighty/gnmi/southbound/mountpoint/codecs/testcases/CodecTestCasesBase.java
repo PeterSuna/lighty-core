@@ -130,7 +130,6 @@ public class CodecTestCasesBase {
                         .node(getMapEntryIdentifierOfNodeInModule(OC_INTERFACES_ID, "interface", "name", "br0"))
                         .node(YangInstanceIdentifier.NodeIdentifier.create(
                                 (QName.create(getQNameOfModule(OC_IF_ETHERNET_ID), "ethernet"))))
-                        .node(getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "ethernet"))
                         .node(getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "config"));
 
         return ImmutablePair.of(identifier, ethConfigNode());
@@ -200,11 +199,9 @@ public class CodecTestCasesBase {
                         .node(getMapEntryIdentifierOfNodeInModule(OC_INTERFACES_ID, "interface", "name", "br0"))
                         .node(YangInstanceIdentifier.NodeIdentifier.create(
                                 QName.create(getQNameOfModule(OC_IF_ETHERNET_ID), "ethernet")))
-                        .node(getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "ethernet"))
                         .node(getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "config"))
                         .node(YangInstanceIdentifier.NodeIdentifier.create(
-                                QName.create(getQNameOfModule(OC_IF_AGGREGATE_ID), "aggregate-id")))
-                        .node(getNodeIdentifierOfNodeInModule(OC_IF_AGGREGATE_ID, "aggregate-id"));
+                                QName.create(getQNameOfModule(OC_IF_AGGREGATE_ID), "aggregate-id")));
 
 
         return ImmutablePair.of(identifier,
@@ -287,30 +284,15 @@ public class CodecTestCasesBase {
                                 .withChild(makeLeafNode(OC_INTERFACES_ID, "name", "br0"))
                                 .withChild(interfaceConfigNode())
                                 .withChild(ImmutableContainerNodeBuilder.create()
-                                        .withNodeIdentifier(YangInstanceIdentifier.NodeIdentifier.create(
-                                                QName.create(getQNameOfModule(OC_IF_ETHERNET_ID), "ethernet")))
-                                        .withChild(ImmutableContainerNodeBuilder.create()
-                                                .withNodeIdentifier(
-                                                        getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "ethernet"))
-                                                .withChild(ethConfigNode())
-                                                .withChild(ImmutableContainerNodeBuilder.create()
-                                                        .withNodeIdentifier(YangInstanceIdentifier
-                                                                .NodeIdentifier.create(
-                                                                       QName.create(
-                                                                                getQNameOfModule(OC_VLAN_ID),
-                                                                                "switched-vlan")))
-                                                        .withChild(switchedVlanNode())
-                                                        .build())
-                                                .build())
-                                        .build())
+                                    .withNodeIdentifier(
+                                        getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "ethernet"))
+                                    .withChild(ethConfigNode())
+                                    .withChild(switchedVlanNode())
+                                    .build())
                                 .withChild(ImmutableContainerNodeBuilder.create()
                                         .withNodeIdentifier(YangInstanceIdentifier.NodeIdentifier.create(
                                                 QName.create(getQNameOfModule(OC_IF_AGGREGATE_ID),
                                                         "aggregation")))
-                                        .withChild(ImmutableContainerNodeBuilder.create()
-                                                .withNodeIdentifier(
-                                                        getNodeIdentifierOfNodeInModule(OC_IF_AGGREGATE_ID,
-                                                                "aggregation"))
                                                 .withChild(ImmutableContainerNodeBuilder.create()
                                                         .withNodeIdentifier(getNodeIdentifierOfNodeInModule(
                                                                 OC_IF_AGGREGATE_ID, "config"))
@@ -319,15 +301,7 @@ public class CodecTestCasesBase {
                                                                 makeLeafNode(OC_IF_AGGREGATE_ID, "min-links",
                                                                         Uint16.valueOf(5))
                                                         )).build())
-                                                .withChild(ImmutableContainerNodeBuilder.create()
-                                                        .withNodeIdentifier(YangInstanceIdentifier
-                                                                .NodeIdentifier.create(
-                                                                        QName.create(
-                                                                                getQNameOfModule(OC_VLAN_ID),
-                                                                                "switched-vlan")))
-                                                        .withChild(switchedVlanNode())
-                                                        .build())
-                                                .build())
+                                                .withChild(switchedVlanNode())
                                         .build())
                                 .build())
                         .build())
@@ -341,7 +315,7 @@ public class CodecTestCasesBase {
                         getNodeIdentifierOfNodeInModule(OC_IF_ETHERNET_ID, "config"))
                 .withValue(List.of(
                         makeLeafNode(OC_IF_ETHERNET_ID, "auto-negotiate", true),
-                        makeContainerNode(
+                        makeLeafNode(
                                 OC_IF_AGGREGATE_ID, "aggregate-id", "admin"),
                         makeLeafNode(OC_IF_ETHERNET_ID, "port-speed",
                                 OC_IF_ETHERNET_ID, "SPEED_10MB"),
