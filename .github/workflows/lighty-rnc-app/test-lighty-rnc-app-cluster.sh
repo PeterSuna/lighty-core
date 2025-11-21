@@ -98,6 +98,13 @@ echo "Controller0 IPS set to: $CTRL0_IP running in pod name: $CTRL0_NAME"
 echo "Controller1 IPS set to: $CTRL1_IP running in pod name: $CTRL1_NAME"
 echo "Controller2 IPS set to: $CTRL2_IP running in pod name: $CTRL2_NAME"
 
+printf "\n------- Show Logs for every pod -------"
+pod_names=$(minikube kubectl -- get pods --no-headers -o custom-columns=":metadata.name")
+for pod_name in $pod_names; \
+do \
+  minikube kubectl -- logs "$pod_name" \
+;done
+
 printLine() {
   printf '%.0s-' {1..100}; echo ""
 }
