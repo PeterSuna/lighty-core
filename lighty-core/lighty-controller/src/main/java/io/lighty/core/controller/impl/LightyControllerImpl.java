@@ -343,6 +343,8 @@ public class LightyControllerImpl extends AbstractLightyModule implements Lighty
         //create data broker
         this.dataBroker = bindingAdapterFactory.createDataBroker(concurrentDOMDataBroker);
 
+        LOG.info("Registered modules: {}", this.schemaService.getGlobalContext().getModules());
+        LOG.info("clusteringHandler service: [{}]", clusteringHandler);
         this.clusteringHandler.ifPresent(handler -> handler.start(rpcConsumerRegistry));
 
         this.yangLibraryWriter = new YangLibraryWriterSingleton(clusterSingletonServiceProvider, schemaService,

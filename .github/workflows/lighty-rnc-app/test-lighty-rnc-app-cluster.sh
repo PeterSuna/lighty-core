@@ -126,6 +126,7 @@ assertNodeConnected() {
 
 assertPodsTopologyResponse() {
   local previousResponse=""
+  local currentNormalizedResponse=""
   for pod_controller_ip in $POD_CONTROLLER_IPS;
   do
     TOPOLOGY_RESPONSE=$(curl --request GET \
@@ -136,12 +137,14 @@ assertPodsTopologyResponse() {
         test_results+=(1)
         continue
       elif [[ -z "$previousResponse" ]]
+      # Sort json objects to allow matching unordered JSON reply
+      currentNormalizedResponse=$(echo "$TOPOLOGY_RESPONSE" | jq -S '.')
       then
         # First request
-        echo "first response $TOPOLOGY_RESPONSE"
-        previousResponse=$TOPOLOGY_RESPONSE
+        echo "first response $currentNormalizedResponse"
+        previousResponse=$currentNormalizedResponse
         continue
-      elif [[ "$previousResponse" != "$TOPOLOGY_RESPONSE" ]]
+      elif [[ "$previousResponse" != "$currentNormalizedResponse" ]]
       then
         echo "Previous response doesn't match: [ $previousResponse ] with current response : [ $TOPOLOGY_RESPONSE ]"
         test_results+=(1)
@@ -177,7 +180,7 @@ validateTestStatus() {
 }
 
 printLine
-echo "-- Lighty-rcgnmi-app curl tests --"
+echo "-- Lighty-rnc-app curl tests --"
 
 # Cluster state (:8558/cluster/members)
 for pod_controller_ip in $POD_CONTROLLER_IPS; \
@@ -287,4 +290,12 @@ sleep 15
 
 assertPodsTopologyResponse
 validateTestStatus
+
+printf "\n------- Show Logs for every pod -------"
+pod_names=$(minikube kubectl -- get pods --no-headers -o custom-columns=":metadata.name")
+for pod_name in $pod_names; \
+do \
+  minikube kubectl -- logs "$pod_name" \
+;done
+
 kubectl delete pod netconf-simulator --ignore-not-found
